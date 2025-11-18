@@ -1,0 +1,455 @@
+<div class="container-fluid py-4">
+  <!-- Header -->
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h2><i class="fas fa-receipt me-2"></i>Gestión de Facturas</h2>
+    <div class="d-flex gap-2">
+      <button class="btn btn-info" (click)="limpiarFiltros()">
+        <i class="fas fa-sync-alt me-1"></i>Actualizar
+      </button>
+      <button class="btn btn-success" (click)="abrirModalCrear()">
+        <i class="fas fa-plus me-1"></i>Nueva Factura
+      </button>
+    </div>
+  </div>
+
+  <!-- Estadísticas rápidas -->
+  <div class="row mb-4">
+    <div class="col-md-4">
+      <div class="card bg-primary text-white">
+        <div class="card-body text-center">
+          <h4><i class="fas fa-file-invoice me-2"></i>{{ totalFacturas }}</h4>
+          <small>Total Facturas</small>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="card bg-success text-white">
+        <div class="card-body text-center">
+          <h4><i class="fas fa-dollar-sign me-2"></i>{{ formatearMoneda(valorTotalGeneral) }}</h4>
+          <small>Valor Total</small>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="card bg-info text-white">
+        <div class="card-body text-center">
+          <h4><i class="fas fa-chart-line me-2"></i>{{ totalFacturas > 0 ? formatearMoneda(valorTotalGeneral / totalFacturas) : '$0' }}</h4>
+          <small>Promedio por Factura</small>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Alertas -->
+  <div *ngIf="mensaje" class="alert" [ngClass]="{
+    'alert-success': tipoMensaje === 'success',
+    'alert-danger': tipoMensaje === 'error',
+    'alert-info': tipoMensaje === 'info'
+  }" role="alert">
+    <i class="fas" [ngClass]="{
+      'fa-check-circle': tipoMensaje === 'success',
+      'fa-exclamation-triangle': tipoMensaje === 'error',
+      'fa-info-circle': tipoMensaje === 'info'
+    }"></i>
+    {{ mensaje }}
+  </div>
+
+  <!-- Filtros y Búsqueda -->
+  <div class="card mb-4">
+    <div class="card-body">
+      <div class="row g-3">
+        <div class="col-md-4">
+          <label class="form-label">Buscar facturas:</label>
+          <div class="input-group">
+            <input 
+              type="text" 
+              class="form-control" 
+              placeholder="ID, cliente o producto..." 
+              [(ngModel)]="terminoBusqueda"
+              (keyup.enter)="buscarFacturas()">
+            <button class="btn btn-outline-primary" (click)="buscarFacturas()">
+              <i class="fas fa-search"></i>
+            </button>
+          </div>
+        </div>
+        <div class="col-md-3">
+          <label class="form-label">Fecha desde:</label>
+          <input 
+            type="date" 
+            class="form-control" 
+            [(ngModel)]="fechaInicio"
+            (change)="filtrarPorFechas()">
+        </div>
+        <div class="col-md-3">
+          <label class="form-label">Fecha hasta:</label>
+          <input 
+            type="date" 
+            class="form-control" 
+            [(ngModel)]="fechaFin"
+            (change)="filtrarPorFechas()">
+        </div>
+        <div class="col-md-2">
+          <label class="form-label">&nbsp;</label>
+          <div class="d-grid">
+            <button class="btn btn-outline-secondary" (click)="limpiarFiltros()">
+              <i class="fas fa-times me-1"></i>Limpiar
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tabla de Facturas -->
+  <div class="card">
+    <div class="card-body">
+      <div *ngIf="loading" class="text-center py-4">
+        <div class="spinner-border text-primary" role="status">
+          <span class="visually-hidden">Cargando...</span>
+        </div>
+        <p class="mt-2">Cargando facturas...</p>
+      </div>
+
+      <div *ngIf="!loading && facturas.length === 0" class="text-center py-4">
+        <i class="fas fa-receipt fa-3x text-muted mb-3"></i>
+        <h5 class="text-muted">No hay facturas disponibles</h5>
+        <p class="text-muted">{{ terminoBusqueda ? 'No se encontraron facturas con ese criterio' : 'Aún no hay facturas registradas' }}</p>
+      </div>
+
+      <div *ngIf="!loading && facturas.length > 0" class="table-responsive">
+        <table class="table table-hover">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Fecha</th>
+              <th>Cliente</th>
+              <th>Producto</th>
+              <th>Cantidad</th>
+              <th>Valor Total</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let factura of facturas">
+              <td>
+                <strong class="text-primary">#{{ factura.facturaId }}</strong>
+              </td>
+              <td>
+                <i class="fas fa-calendar me-1"></i>{{ formatearFecha(factura.fecha) }}
+              </td>
+              <td>
+                <i class="fas fa-user me-1"></i>{{ factura.cliente.clienteNombre }}
+              </td>
+              <td>
+                <i class="fas fa-ice-cream me-1"></i>{{ factura.producto.productoNombre }}
+              </td>
+              <td>
+                <span class="badge bg-secondary">{{ factura.cantidad }}</span>
+              </td>
+              <td>
+                <strong class="text-success">{{ formatearMoneda(factura.valorTotal) }}</strong>
+              </td>
+              <td>
+                <div class="btn-group" role="group">
+                  <button 
+                    class="btn btn-sm btn-outline-info" 
+                    (click)="abrirModalDetalle(factura)"
+                    title="Ver detalle">
+                    <i class="fas fa-eye"></i>
+                  </button>
+                  <button 
+                    class="btn btn-sm btn-outline-primary" 
+                    (click)="abrirModalEditar(factura)"
+                    title="Editar factura">
+                    <i class="fas fa-edit"></i>
+                  </button>
+                  <button 
+                    class="btn btn-sm btn-outline-danger" 
+                    (click)="eliminarFactura(factura)"
+                    title="Eliminar factura">
+                    <i class="fas fa-trash"></i>
+                  </button>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Crear Factura -->
+<div class="modal fade" [class.show]="mostrarModalCrear" [style.display]="mostrarModalCrear ? 'block' : 'none'" tabindex="-1">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">
+          <i class="fas fa-plus me-2"></i>Nueva Factura
+        </h5>
+        <button type="button" class="btn-close" (click)="cerrarModalCrear()"></button>
+      </div>
+      <div class="modal-body">
+        <form (ngSubmit)="crearFactura()" #formularioCrear="ngForm">
+          <div class="row g-3">
+            <div class="col-md-6">
+              <label class="form-label">Fecha *</label>
+              <input 
+                type="date" 
+                class="form-control" 
+                [(ngModel)]="nuevaFactura.fecha"
+                name="fecha"
+                required>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Cliente *</label>
+              <select 
+                class="form-select" 
+                [value]="nuevaFactura.cliente.clienteId"
+                name="cliente"
+                (change)="onClienteSeleccionado($event)"
+                required>
+                <option value="0">Seleccionar cliente...</option>
+                <option *ngFor="let cliente of clientes" [value]="cliente.id">
+                  {{ cliente.nombre }}
+                </option>
+              </select>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Producto *</label>
+              <select 
+                class="form-select" 
+                [value]="nuevaFactura.producto.productoId"
+                name="producto"
+                (change)="onProductoSeleccionado($event)"
+                required>
+                <option value="0">Seleccionar producto...</option>
+                <option *ngFor="let producto of productos" [value]="producto.id">
+                  {{ producto.nombre }} - {{ formatearMoneda(producto.precio) }}
+                </option>
+              </select>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Cantidad *</label>
+              <input 
+                type="number" 
+                class="form-control" 
+                [(ngModel)]="nuevaFactura.cantidad"
+                name="cantidad"
+                min="1"
+                (change)="onCantidadCambiada()"
+                required>
+              <div class="form-text" *ngIf="nuevaFactura.producto.productoId > 0">
+                Stock disponible: {{ obtenerStockDisponible(nuevaFactura.producto.productoId) }}
+              </div>
+            </div>
+            <div class="col-12">
+              <div class="card bg-light">
+                <div class="card-body">
+                  <h6 class="card-title">Resumen</h6>
+                  <div class="row">
+                    <div class="col-md-6">
+                      <strong>Precio unitario:</strong> {{ formatearMoneda(obtenerPrecioProductoNuevaFactura()) }}
+                    </div>
+                    <div class="col-md-6">
+                      <strong>Total:</strong> <span class="text-success">{{ formatearMoneda(nuevaFactura.valorTotal || 0) }}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" (click)="cerrarModalCrear()">
+          <i class="fas fa-times me-1"></i>Cancelar
+        </button>
+        <button 
+          type="button" 
+          class="btn btn-success" 
+          (click)="crearFactura()"
+          [disabled]="loading || nuevaFactura.valorTotal === 0">
+          <i class="fas fa-save me-1"></i>
+          {{ loading ? 'Creando...' : 'Crear Factura' }}
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Editar Factura -->
+<div class="modal fade" [class.show]="mostrarModalEditar" [style.display]="mostrarModalEditar ? 'block' : 'none'" tabindex="-1">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">
+          <i class="fas fa-edit me-2"></i>Editar Factura #{{ facturaSeleccionada?.facturaId }}
+        </h5>
+        <button type="button" class="btn-close" (click)="cerrarModalEditar()"></button>
+      </div>
+      <div class="modal-body" *ngIf="facturaSeleccionada">
+        <form (ngSubmit)="actualizarFactura()" #formularioEditar="ngForm">
+          <div class="row g-3">
+            <div class="col-md-6">
+              <label class="form-label">Fecha</label>
+              <input 
+                type="date" 
+                class="form-control" 
+                [(ngModel)]="facturaEditar.fecha"
+                name="fecha">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Cliente</label>
+              <select 
+                class="form-select" 
+                [value]="facturaEditar.cliente?.clienteId"
+                name="cliente"
+                (change)="onClienteSeleccionado($event, true)">
+                <option *ngFor="let cliente of clientes" [value]="cliente.id">
+                  {{ cliente.nombre }}
+                </option>
+              </select>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Producto</label>
+              <select 
+                class="form-select" 
+                [value]="facturaEditar.producto?.productoId"
+                name="producto"
+                (change)="onProductoSeleccionado($event, true)">
+                <option *ngFor="let producto of productos" [value]="producto.id">
+                  {{ producto.nombre }} - {{ formatearMoneda(producto.precio) }}
+                </option>
+              </select>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Cantidad</label>
+              <input 
+                type="number" 
+                class="form-control" 
+                [(ngModel)]="facturaEditar.cantidad"
+                name="cantidad"
+                min="1"
+                (change)="onCantidadCambiada(true)">
+              <div class="form-text" *ngIf="facturaEditar.producto && facturaEditar.producto.productoId > 0">
+                Stock disponible: {{ obtenerStockDisponible(facturaEditar.producto.productoId) }}
+              </div>
+            </div>
+            <div class="col-12">
+              <div class="card bg-light">
+                <div class="card-body">
+                  <h6 class="card-title">Resumen Actualizado</h6>
+                  <div class="row">
+                    <div class="col-md-6">
+                      <strong>Precio unitario:</strong> {{ formatearMoneda(obtenerPrecioProductoEdicion()) }}
+                    </div>
+                    <div class="col-md-6">
+                      <strong>Total:</strong> <span class="text-success">{{ formatearMoneda(facturaEditar.valorTotal || 0) }}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" (click)="cerrarModalEditar()">
+          <i class="fas fa-times me-1"></i>Cancelar
+        </button>
+        <button 
+          type="button" 
+          class="btn btn-primary" 
+          (click)="actualizarFactura()"
+          [disabled]="loading">
+          <i class="fas fa-save me-1"></i>
+          {{ loading ? 'Actualizando...' : 'Actualizar Factura' }}
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Detalle Factura -->
+<div class="modal fade" [class.show]="mostrarModalDetalle" [style.display]="mostrarModalDetalle ? 'block' : 'none'" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">
+          <i class="fas fa-receipt me-2"></i>Detalle Factura #{{ facturaSeleccionada?.facturaId }}
+        </h5>
+        <button type="button" class="btn-close" (click)="cerrarModalDetalle()"></button>
+      </div>
+      <div class="modal-body" *ngIf="facturaSeleccionada">
+        <div class="row g-3">
+          <div class="col-12">
+            <div class="card">
+              <div class="card-header bg-primary text-white">
+                <h6 class="mb-0"><i class="fas fa-info-circle me-2"></i>Información General</h6>
+              </div>
+              <div class="card-body">
+                <div class="row">
+                  <div class="col-md-6">
+                    <strong>ID:</strong> #{{ facturaSeleccionada.facturaId }}
+                  </div>
+                  <div class="col-md-6">
+                    <strong>Fecha:</strong> {{ formatearFecha(facturaSeleccionada.fecha) }}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="col-12">
+            <div class="card">
+              <div class="card-header bg-success text-white">
+                <h6 class="mb-0"><i class="fas fa-user me-2"></i>Cliente</h6>
+              </div>
+              <div class="card-body">
+                <p class="mb-0">{{ facturaSeleccionada.cliente.clienteNombre }}</p>
+              </div>
+            </div>
+          </div>
+          <div class="col-12">
+            <div class="card">
+              <div class="card-header bg-info text-white">
+                <h6 class="mb-0"><i class="fas fa-ice-cream me-2"></i>Producto</h6>
+              </div>
+              <div class="card-body">
+                <div class="row">
+                  <div class="col-md-8">
+                    <strong>Producto:</strong> {{ facturaSeleccionada.producto.productoNombre }}
+                  </div>
+                  <div class="col-md-4">
+                    <strong>Cantidad:</strong> {{ facturaSeleccionada.cantidad }}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="col-12">
+            <div class="card">
+              <div class="card-header bg-warning text-dark">
+                <h6 class="mb-0"><i class="fas fa-dollar-sign me-2"></i>Total</h6>
+              </div>
+              <div class="card-body text-center">
+                <h4 class="text-success mb-0">{{ formatearMoneda(facturaSeleccionada.valorTotal) }}</h4>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" (click)="cerrarModalDetalle()">
+          <i class="fas fa-times me-1"></i>Cerrar
+        </button>
+        <button type="button" class="btn btn-primary" (click)="abrirModalEditar(facturaSeleccionada!)">
+          <i class="fas fa-edit me-1"></i>Editar
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Backdrop para modales -->
+<div class="modal-backdrop fade show" *ngIf="mostrarModalCrear || mostrarModalEditar || mostrarModalDetalle"></div>

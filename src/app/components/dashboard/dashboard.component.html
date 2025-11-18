@@ -1,0 +1,181 @@
+<!-- Dashboard Header -->
+<div class="row mb-4">
+  <div class="col-12">
+    <h1 class="h2 text-dark fw-bold mb-2">Dashboard</h1>
+    <p class="text-muted mb-0">Bienvenido al sistema de gestión HeladosMafe</p>
+  </div>
+</div>
+
+<!-- Stats Cards -->
+<div class="row mb-4">
+  <!-- Productos Card -->
+  <div class="col-lg-3 col-md-6 mb-3">
+    <div class="card card-stats border-0 shadow-sm h-100" style="border-left-color: #e91e63 !important;">
+      <div class="card-body">
+        <div class="row align-items-center">
+          <div class="col-8">
+            <h2 class="fw-bold text-dark mb-1">{{ stats.productos }}</h2>
+            <p class="text-muted mb-0 small">Productos</p>
+          </div>
+          <div class="col-4 text-end">
+            <div class="rounded-circle d-inline-flex align-items-center justify-content-center" 
+                 style="width: 50px; height: 50px; background-color: rgba(233, 30, 99, 0.1);">
+              <i class="fas fa-ice-cream" style="color: #e91e63; font-size: 20px;"></i>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Clientes Card -->
+  <div class="col-lg-3 col-md-6 mb-3">
+    <div class="card card-stats border-0 shadow-sm h-100" style="border-left-color: #4caf50 !important;">
+      <div class="card-body">
+        <div class="row align-items-center">
+          <div class="col-8">
+            <h2 class="fw-bold text-dark mb-1">{{ stats.clientes }}</h2>
+            <p class="text-muted mb-0 small">Clientes</p>
+          </div>
+          <div class="col-4 text-end">
+            <div class="rounded-circle d-inline-flex align-items-center justify-content-center" 
+                 style="width: 50px; height: 50px; background-color: rgba(76, 175, 80, 0.1);">
+              <i class="fas fa-user-friends" style="color: #4caf50; font-size: 20px;"></i>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Facturas Card -->
+  <div class="col-lg-3 col-md-6 mb-3">
+    <div class="card card-stats border-0 shadow-sm h-100" style="border-left-color: #9c27b0 !important;">
+      <div class="card-body">
+        <div class="row align-items-center">
+          <div class="col-8">
+            <h2 class="fw-bold text-dark mb-1">{{ stats.facturas }}</h2>
+            <p class="text-muted mb-0 small">Facturas</p>
+          </div>
+          <div class="col-4 text-end">
+            <div class="rounded-circle d-inline-flex align-items-center justify-content-center" 
+                 style="width: 50px; height: 50px; background-color: rgba(156, 39, 176, 0.1);">
+              <i class="fas fa-receipt" style="color: #9c27b0; font-size: 20px;"></i>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Ventas Totales Card -->
+  <div class="col-lg-3 col-md-6 mb-3">
+    <div class="card card-stats border-0 shadow-sm h-100" style="border-left-color: #ff5722 !important;">
+      <div class="card-body">
+        <div class="row align-items-center">
+          <div class="col-8">
+            <h2 class="fw-bold text-dark mb-1">${{ stats.ventasTotales.toFixed(2) }}</h2>
+            <p class="text-muted mb-0 small">Ventas Totales</p>
+          </div>
+          <div class="col-4 text-end">
+            <div class="rounded-circle d-inline-flex align-items-center justify-content-center" 
+                 style="width: 50px; height: 50px; background-color: rgba(255, 87, 34, 0.1);">
+              <i class="fas fa-dollar-sign" style="color: #ff5722; font-size: 20px;"></i>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Charts and Summary Section -->
+<div class="row">
+  <!-- Resumen de Ventas -->
+  <div class="col-lg-6 mb-4">
+    <div class="card border-0 shadow-sm h-100">
+      <div class="card-header bg-white border-bottom">
+        <div class="d-flex align-items-center">
+          <i class="fas fa-chart-line text-primary me-2"></i>
+          <h5 class="mb-0 fw-semibold">Resumen de Ventas</h5>
+        </div>
+      </div>
+      <div class="card-body">
+        <div class="d-flex align-items-center justify-content-between mb-3">
+          <span class="text-muted">El sistema está registrando {{ stats.facturas }} facturas con un total de ${{ stats.ventasTotales.toFixed(2) }} en ventas.</span>
+        </div>
+        
+        <!-- Placeholder for future chart -->
+        <div class="text-center py-4">
+          <i class="fas fa-chart-area fa-3x text-muted opacity-25"></i>
+          <p class="text-muted mt-2 small">Gráfico de ventas (próximamente)</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Inventario -->
+  <div class="col-lg-6 mb-4">
+    <div class="card border-0 shadow-sm h-100">
+      <div class="card-header bg-white border-bottom">
+        <div class="d-flex align-items-center">
+          <i class="fas fa-boxes text-success me-2"></i>
+          <h5 class="mb-0 fw-semibold">Inventario</h5>
+        </div>
+      </div>
+      <div class="card-body">
+        <div class="d-flex align-items-center justify-content-between mb-3">
+          <span class="text-muted">Actualmente tienes {{ stats.productos }} productos registrados en el sistema.</span>
+        </div>
+        
+        <!-- Placeholder for inventory items -->
+        <div class="text-center py-4">
+          <i class="fas fa-warehouse fa-3x text-muted opacity-25"></i>
+          <p class="text-muted mt-2 small">Lista de inventario (próximamente)</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Quick Actions -->
+<div class="row">
+  <div class="col-12">
+    <div class="card border-0 shadow-sm">
+      <div class="card-header bg-white border-bottom">
+        <h5 class="mb-0 fw-semibold">
+          <i class="fas fa-bolt text-warning me-2"></i>
+          Acciones Rápidas
+        </h5>
+      </div>
+      <div class="card-body">
+        <div class="row">
+          <div class="col-lg-3 col-md-6 mb-3">
+            <button class="btn btn-outline-primary w-100 py-3" (click)="navigateTo('/productos')">
+              <i class="fas fa-plus-circle mb-2 d-block"></i>
+              Agregar Producto
+            </button>
+          </div>
+          <div class="col-lg-3 col-md-6 mb-3">
+            <button class="btn btn-outline-success w-100 py-3" (click)="navigateTo('/clientes')">
+              <i class="fas fa-user-plus mb-2 d-block"></i>
+              Nuevo Cliente
+            </button>
+          </div>
+          <div class="col-lg-3 col-md-6 mb-3">
+            <button class="btn btn-outline-info w-100 py-3" (click)="navigateTo('/facturas')">
+              <i class="fas fa-receipt mb-2 d-block"></i>
+              Nueva Factura
+            </button>
+          </div>
+          <div class="col-lg-3 col-md-6 mb-3">
+            <button class="btn btn-outline-secondary w-100 py-3" (click)="navigateTo('/usuarios')">
+              <i class="fas fa-users-cog mb-2 d-block"></i>
+              Gestionar Usuarios
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

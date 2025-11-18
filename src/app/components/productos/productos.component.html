@@ -1,0 +1,274 @@
+<div class="container-fluid py-4">
+  <!-- Header -->
+  <div class="row mb-4">
+    <div class="col-12">
+      <div class="d-flex justify-content-between align-items-center">
+        <h2><i class="fas fa-ice-cream text-primary me-2"></i>Gestión de Productos</h2>
+        <div>
+          <button type="button" class="btn btn-success me-2" (click)="abrirModalNuevo()">
+            <i class="fas fa-plus me-1"></i>Nuevo Producto
+          </button>
+          <button type="button" class="btn btn-info me-2" (click)="verInventario()">
+            <i class="fas fa-boxes me-1"></i>Inventario
+          </button>
+          <button type="button" class="btn btn-secondary" (click)="navegarADashboard()">
+            <i class="fas fa-arrow-left me-1"></i>Dashboard
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Mensajes -->
+  <div class="row mb-3" *ngIf="mensaje">
+    <div class="col-12">
+      <div class="alert" [class.alert-success]="tipoMensaje === 'success'" [class.alert-danger]="tipoMensaje === 'error'" role="alert">
+        <i class="fas" [class.fa-check-circle]="tipoMensaje === 'success'" [class.fa-exclamation-circle]="tipoMensaje === 'error'" class="me-2"></i>
+        {{ mensaje }}
+      </div>
+    </div>
+  </div>
+
+  <!-- Filtros de Búsqueda -->
+  <div class="row mb-4">
+    <div class="col-12">
+      <div class="card">
+        <div class="card-header">
+          <h5 class="mb-0"><i class="fas fa-search me-2"></i>Búsqueda de Productos</h5>
+        </div>
+        <div class="card-body">
+          <div class="row">
+            <div class="col-md-4">
+              <label class="form-label">Buscar por nombre:</label>
+              <div class="input-group">
+                <input type="text" class="form-control" [(ngModel)]="filtros.nombre" placeholder="Nombre del producto">
+                <button class="btn btn-outline-primary" (click)="buscarPorNombre()">
+                  <i class="fas fa-search"></i>
+                </button>
+              </div>
+            </div>
+            <div class="col-md-3">
+              <label class="form-label">Precio:</label>
+              <input type="number" class="form-control" [(ngModel)]="filtros.precio" placeholder="0.00" step="0.01" min="0">
+            </div>
+            <div class="col-md-3">
+              <label class="form-label">Condición:</label>
+              <select class="form-select" [(ngModel)]="filtros.condicionPrecio">
+                <option value="mayor">Mayor que</option>
+                <option value="menor">Menor que</option>
+                <option value="igual">Igual a</option>
+              </select>
+            </div>
+            <div class="col-md-2 d-flex align-items-end">
+              <div class="btn-group w-100">
+                <button class="btn btn-primary" (click)="buscarPorPrecio()" title="Buscar por precio">
+                  <i class="fas fa-dollar-sign"></i>
+                </button>
+                <button class="btn btn-secondary" (click)="limpiarFiltros()" title="Limpiar filtros">
+                  <i class="fas fa-times"></i>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tabla de Productos -->
+  <div class="row">
+    <div class="col-12">
+      <div class="card">
+        <div class="card-header">
+          <div class="d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">
+              <i class="fas fa-list me-2"></i>Lista de Productos
+              <span class="badge bg-primary ms-2">{{ productos.length }}</span>
+            </h5>
+            <button class="btn btn-outline-success btn-sm" (click)="cargarProductos()">
+              <i class="fas fa-sync-alt me-1"></i>Actualizar
+            </button>
+          </div>
+        </div>
+        <div class="card-body">
+          <!-- Loading -->
+          <div *ngIf="cargando" class="text-center py-4">
+            <div class="spinner-border text-primary" role="status">
+              <span class="visually-hidden">Cargando...</span>
+            </div>
+            <p class="mt-2">Cargando productos...</p>
+          </div>
+
+          <!-- Tabla -->
+          <div *ngIf="!cargando" class="table-responsive">
+            <table class="table table-hover">
+              <thead class="table-dark">
+                <tr>
+                  <th>ID</th>
+                  <th>Nombre</th>
+                  <th>Precio</th>
+                  <th class="text-center">Acciones</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let producto of productos">
+                  <td>{{ producto.id }}</td>
+                  <td>{{ producto.nombre }}</td>
+                  <td class="text-success fw-bold">${{ producto.precio.toFixed(2) }}</td>
+                  <td class="text-center">
+                    <div class="btn-group" role="group">
+                      <button class="btn btn-outline-primary btn-sm" (click)="editarProducto(producto)" title="Editar">
+                        <i class="fas fa-edit"></i>
+                      </button>
+                      <button class="btn btn-outline-danger btn-sm" (click)="confirmarEliminar(producto)" title="Eliminar">
+                        <i class="fas fa-trash"></i>
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+                <tr *ngIf="productos.length === 0 && !cargando">
+                  <td colspan="4" class="text-center py-4 text-muted">
+                    <i class="fas fa-inbox fa-2x mb-2 d-block"></i>
+                    No se encontraron productos
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Crear/Editar Producto -->
+<div class="modal fade" id="modalProducto" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">
+          <i class="fas fa-ice-cream me-2"></i>
+          {{ esEdicion ? 'Editar Producto' : 'Nuevo Producto' }}
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <form>
+          <div class="mb-3">
+            <label for="nombre" class="form-label">Nombre del Producto *</label>
+            <input type="text" class="form-control" id="nombre" [(ngModel)]="productoForm.nombre" 
+                   name="nombre" required placeholder="Ej: Helado de Vainilla">
+          </div>
+          <div class="mb-3">
+            <label for="precio" class="form-label">Precio *</label>
+            <div class="input-group">
+              <span class="input-group-text">$</span>
+              <input type="number" class="form-control" id="precio" [(ngModel)]="productoForm.precio" 
+                     name="precio" required min="0" step="0.01" placeholder="0.00">
+            </div>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+          <i class="fas fa-times me-1"></i>Cancelar
+        </button>
+        <button type="button" class="btn btn-primary" (click)="guardarProducto()" [disabled]="guardando">
+          <span *ngIf="guardando" class="spinner-border spinner-border-sm me-2"></span>
+          <i *ngIf="!guardando" [class]="esEdicion ? 'fas fa-save' : 'fas fa-plus'" class="me-1"></i>
+          {{ guardando ? 'Guardando...' : (esEdicion ? 'Actualizar' : 'Crear') }}
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Confirmar Eliminación -->
+<div class="modal fade" id="modalEliminar" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title text-danger">
+          <i class="fas fa-exclamation-triangle me-2"></i>Confirmar Eliminación
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <p>¿Estás seguro de que deseas eliminar el producto <strong>"{{ productoAEliminar?.nombre }}"</strong>?</p>
+        <div class="alert alert-warning">
+          <i class="fas fa-exclamation-triangle me-2"></i>
+          Esta acción no se puede deshacer.
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+          <i class="fas fa-times me-1"></i>Cancelar
+        </button>
+        <button type="button" class="btn btn-danger" (click)="eliminarProducto()" [disabled]="eliminando">
+          <span *ngIf="eliminando" class="spinner-border spinner-border-sm me-2"></span>
+          <i *ngIf="!eliminando" class="fas fa-trash me-1"></i>
+          {{ eliminando ? 'Eliminando...' : 'Eliminar' }}
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Inventario -->
+<div class="modal fade" id="modalInventario" tabindex="-1">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">
+          <i class="fas fa-boxes me-2"></i>Gestión de Inventario
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <div *ngIf="inventarios.length === 0" class="text-center py-4">
+          <i class="fas fa-boxes fa-3x text-muted mb-3"></i>
+          <p class="text-muted">No hay registros de inventario</p>
+        </div>
+        <div *ngIf="inventarios.length > 0" class="table-responsive">
+          <table class="table table-hover">
+            <thead class="table-light">
+              <tr>
+                <th>ID</th>
+                <th>Producto</th>
+                <th>Stock Actual</th>
+                <th>Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let inventario of inventarios">
+                <td>{{ inventario.producto.id }}</td>
+                <td>{{ inventario.producto?.nombre || 'N/A' }}</td>
+                <td>
+                  <span class="badge" 
+                        [class.bg-success]="inventario.cantidad > 20"
+                        [class.bg-warning]="inventario.cantidad <= 20 && inventario.cantidad > 10"
+                        [class.bg-danger]="inventario.cantidad <= 10">
+                    {{ inventario.cantidad }}
+                  </span>
+                </td>
+                <td>
+                  <div class="input-group input-group-sm" style="max-width: 200px">
+                    <input type="number" class="form-control" [value]="inventario.cantidad" #nuevaCantidad min="0">
+                    <button class="btn btn-outline-primary" (click)="actualizarStock(inventario, +nuevaCantidad.value)">
+                      <i class="fas fa-save"></i>
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+          <i class="fas fa-times me-1"></i>Cerrar
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

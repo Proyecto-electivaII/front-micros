@@ -1,0 +1,428 @@
+<div class="container-fluid py-4">
+  <!-- Header -->
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h2><i class="fas fa-users me-2"></i>Gestión de Usuarios</h2>
+    <div class="d-flex gap-2">
+      <button class="btn btn-info" (click)="abrirModalEstadisticas()">
+        <i class="fas fa-chart-bar me-1"></i>Estadísticas
+      </button>
+      <button class="btn btn-success" (click)="abrirModalCrear()">
+        <i class="fas fa-plus me-1"></i>Nuevo Usuario
+      </button>
+    </div>
+  </div>
+
+  <!-- Alertas -->
+  <div *ngIf="mensaje" class="alert" [ngClass]="{
+    'alert-success': tipoMensaje === 'success',
+    'alert-danger': tipoMensaje === 'error',
+    'alert-info': tipoMensaje === 'info'
+  }" role="alert">
+    <i class="fas" [ngClass]="{
+      'fa-check-circle': tipoMensaje === 'success',
+      'fa-exclamation-triangle': tipoMensaje === 'error',
+      'fa-info-circle': tipoMensaje === 'info'
+    }"></i>
+    {{ mensaje }}
+  </div>
+
+  <!-- Filtros y Búsqueda -->
+  <div class="card mb-4">
+    <div class="card-body">
+      <div class="row g-3">
+        <div class="col-md-6">
+          <label class="form-label">Buscar usuarios:</label>
+          <div class="input-group">
+            <input 
+              type="text" 
+              class="form-control" 
+              placeholder="Buscar por nombre, email o username..." 
+              [(ngModel)]="terminoBusqueda"
+              (keyup.enter)="buscarUsuarios()">
+            <button class="btn btn-outline-primary" (click)="buscarUsuarios()">
+              <i class="fas fa-search"></i>
+            </button>
+            <button class="btn btn-outline-secondary" (click)="limpiarBusqueda()" *ngIf="terminoBusqueda">
+              <i class="fas fa-times"></i>
+            </button>
+          </div>
+        </div>
+        <div class="col-md-3">
+          <label class="form-label">Filtrar por rol:</label>
+          <select class="form-select" [(ngModel)]="filtroRole" (change)="filtrarPorRole()">
+            <option value="TODOS">Todos los roles</option>
+            <option value="ADMIN">Administradores</option>
+            <option value="CUSTOMER">Cajeros</option>
+          </select>
+        </div>
+        <div class="col-md-3">
+          <label class="form-label">&nbsp;</label>
+          <div class="d-grid">
+            <button class="btn btn-outline-primary" (click)="cargarUsuarios()">
+              <i class="fas fa-sync-alt me-1"></i>Actualizar
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tabla de Usuarios -->
+  <div class="card">
+    <div class="card-body">
+      <div *ngIf="loading" class="text-center py-4">
+        <div class="spinner-border text-primary" role="status">
+          <span class="visually-hidden">Cargando...</span>
+        </div>
+        <p class="mt-2">Cargando usuarios...</p>
+      </div>
+
+      <div *ngIf="!loading && usuarios.length === 0" class="text-center py-4">
+        <i class="fas fa-users fa-3x text-muted mb-3"></i>
+        <h5 class="text-muted">No hay usuarios disponibles</h5>
+        <p class="text-muted">{{ terminoBusqueda ? 'No se encontraron usuarios con ese criterio de búsqueda' : 'Aún no hay usuarios registrados' }}</p>
+      </div>
+
+      <div *ngIf="!loading && usuarios.length > 0" class="table-responsive">
+        <table class="table table-hover">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Username</th>
+              <th>Email</th>
+              <th>Nombre Completo</th>
+              <th>Rol</th>
+              <th>Estado</th>
+              <th>Fecha Creación</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let usuario of usuarios">
+              <td>{{ usuario.id }}</td>
+              <td>
+                <strong>{{ usuario.username }}</strong>
+              </td>
+              <td>
+                <i class="fas fa-envelope me-1"></i>{{ usuario.email }}
+              </td>
+              <td>{{ usuario.firstName }} {{ usuario.lastName }}</td>
+              <td>
+                <span class="badge" [ngClass]="{
+                  'bg-danger': usuario.role === 'ADMIN',
+                  'bg-primary': usuario.role === 'CUSTOMER'
+                }">
+                  <i class="fas" [ngClass]="{
+                    'fa-crown': usuario.role === 'ADMIN',
+                    'fa-user': usuario.role === 'CUSTOMER'
+                  }"></i>
+                  {{ getRoleDisplayName(usuario.role) }}
+                </span>
+              </td>
+              <td>
+                <span class="badge" [ngClass]="{
+                  'bg-success': usuario.enabled,
+                  'bg-secondary': !usuario.enabled
+                }">
+                  <i class="fas" [ngClass]="{
+                    'fa-check': usuario.enabled,
+                    'fa-times': !usuario.enabled
+                  }"></i>
+                  {{ getEstadoDisplayName(usuario.enabled) }}
+                </span>
+              </td>
+              <td>
+                <small>{{ usuario.createdAt | date:'dd/MM/yyyy HH:mm' }}</small>
+              </td>
+              <td>
+                <div class="btn-group" role="group">
+                  <button 
+                    class="btn btn-sm btn-outline-primary" 
+                    (click)="abrirModalEditar(usuario)"
+                    title="Editar usuario">
+                    <i class="fas fa-edit"></i>
+                  </button>
+                  <button 
+                    class="btn btn-sm" 
+                    [ngClass]="{
+                      'btn-outline-success': !usuario.enabled,
+                      'btn-outline-warning': usuario.enabled
+                    }"
+                    (click)="cambiarEstadoUsuario(usuario)"
+                    [title]="usuario.enabled ? 'Desactivar usuario' : 'Activar usuario'">
+                    <i class="fas" [ngClass]="{
+                      'fa-play': !usuario.enabled,
+                      'fa-pause': usuario.enabled
+                    }"></i>
+                  </button>
+                  <button 
+                    class="btn btn-sm btn-outline-danger" 
+                    (click)="eliminarUsuario(usuario)"
+                    title="Eliminar usuario">
+                    <i class="fas fa-trash"></i>
+                  </button>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Crear Usuario -->
+<div class="modal fade" [class.show]="mostrarModalCrear" [style.display]="mostrarModalCrear ? 'block' : 'none'" tabindex="-1">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">
+          <i class="fas fa-user-plus me-2"></i>Crear Nuevo Usuario
+        </h5>
+        <button type="button" class="btn-close" (click)="cerrarModalCrear()"></button>
+      </div>
+      <div class="modal-body">
+        <form (ngSubmit)="crearUsuario()" #formularioCrear="ngForm">
+          <div class="row g-3">
+            <div class="col-md-6">
+              <label class="form-label">Username *</label>
+              <input 
+                type="text" 
+                class="form-control" 
+                [(ngModel)]="nuevoUsuario.username"
+                name="username"
+                required
+                minlength="3"
+                maxlength="50"
+                placeholder="Ej: juanperez">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Email *</label>
+              <input 
+                type="email" 
+                class="form-control" 
+                [(ngModel)]="nuevoUsuario.email"
+                name="email"
+                required
+                placeholder="Ej: juan@example.com">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Contraseña *</label>
+              <input 
+                type="password" 
+                class="form-control" 
+                [(ngModel)]="nuevoUsuario.password"
+                name="password"
+                required
+                minlength="6"
+                placeholder="Mínimo 6 caracteres">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Rol *</label>
+              <select 
+                class="form-select" 
+                [(ngModel)]="nuevoUsuario.role"
+                name="role"
+                required>
+                <option value="CUSTOMER">Cajero</option>
+                <option value="ADMIN">Administrador</option>
+              </select>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Nombre *</label>
+              <input 
+                type="text" 
+                class="form-control" 
+                [(ngModel)]="nuevoUsuario.firstName"
+                name="firstName"
+                required
+                placeholder="Ej: Juan">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Apellido *</label>
+              <input 
+                type="text" 
+                class="form-control" 
+                [(ngModel)]="nuevoUsuario.lastName"
+                name="lastName"
+                required
+                placeholder="Ej: Pérez">
+            </div>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" (click)="cerrarModalCrear()">
+          <i class="fas fa-times me-1"></i>Cancelar
+        </button>
+        <button 
+          type="button" 
+          class="btn btn-success" 
+          (click)="crearUsuario()"
+          [disabled]="loading">
+          <i class="fas fa-save me-1"></i>
+          {{ loading ? 'Creando...' : 'Crear Usuario' }}
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Editar Usuario -->
+<div class="modal fade" [class.show]="mostrarModalEditar" [style.display]="mostrarModalEditar ? 'block' : 'none'" tabindex="-1">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">
+          <i class="fas fa-user-edit me-2"></i>Editar Usuario
+        </h5>
+        <button type="button" class="btn-close" (click)="cerrarModalEditar()"></button>
+      </div>
+      <div class="modal-body" *ngIf="usuarioSeleccionado">
+        <form (ngSubmit)="actualizarUsuario()" #formularioEditar="ngForm">
+          <div class="row g-3">
+            <div class="col-md-6">
+              <label class="form-label">Username</label>
+              <input 
+                type="text" 
+                class="form-control" 
+                [(ngModel)]="usuarioEditar.username"
+                name="username"
+                minlength="3"
+                maxlength="50">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Email</label>
+              <input 
+                type="email" 
+                class="form-control" 
+                [(ngModel)]="usuarioEditar.email"
+                name="email">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Nombre</label>
+              <input 
+                type="text" 
+                class="form-control" 
+                [(ngModel)]="usuarioEditar.firstName"
+                name="firstName">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Apellido</label>
+              <input 
+                type="text" 
+                class="form-control" 
+                [(ngModel)]="usuarioEditar.lastName"
+                name="lastName">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Rol</label>
+              <select 
+                class="form-select" 
+                [(ngModel)]="usuarioEditar.role"
+                name="role">
+                <option value="CUSTOMER">Cajero</option>
+                <option value="ADMIN">Administrador</option>
+              </select>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Estado Actual</label>
+              <div class="form-control-plaintext">
+                <span class="badge" [ngClass]="{
+                  'bg-success': usuarioSeleccionado.enabled,
+                  'bg-secondary': !usuarioSeleccionado.enabled
+                }">
+                  {{ getEstadoDisplayName(usuarioSeleccionado.enabled) }}
+                </span>
+              </div>
+            </div>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" (click)="cerrarModalEditar()">
+          <i class="fas fa-times me-1"></i>Cancelar
+        </button>
+        <button 
+          type="button" 
+          class="btn btn-primary" 
+          (click)="actualizarUsuario()"
+          [disabled]="loading">
+          <i class="fas fa-save me-1"></i>
+          {{ loading ? 'Actualizando...' : 'Actualizar Usuario' }}
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Estadísticas -->
+<div class="modal fade" [class.show]="mostrarModalEstadisticas" [style.display]="mostrarModalEstadisticas ? 'block' : 'none'" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">
+          <i class="fas fa-chart-bar me-2"></i>Estadísticas de Usuarios
+        </h5>
+        <button type="button" class="btn-close" (click)="cerrarModalEstadisticas()"></button>
+      </div>
+      <div class="modal-body" *ngIf="estadisticas">
+        <div class="row g-3">
+          <div class="col-md-6">
+            <div class="card bg-primary text-white">
+              <div class="card-body text-center">
+                <i class="fas fa-users fa-2x mb-2"></i>
+                <h4>{{ estadisticas.totalUsuarios }}</h4>
+                <small>Total Usuarios</small>
+              </div>
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="card bg-success text-white">
+              <div class="card-body text-center">
+                <i class="fas fa-user-check fa-2x mb-2"></i>
+                <h4>{{ estadisticas.usuariosActivos }}</h4>
+                <small>Usuarios Activos</small>
+              </div>
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="card bg-secondary text-white">
+              <div class="card-body text-center">
+                <i class="fas fa-user-times fa-2x mb-2"></i>
+                <h4>{{ estadisticas.usuariosInactivos }}</h4>
+                <small>Usuarios Inactivos</small>
+              </div>
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="card bg-danger text-white">
+              <div class="card-body text-center">
+                <i class="fas fa-crown fa-2x mb-2"></i>
+                <h4>{{ estadisticas.totalAdmins }}</h4>
+                <small>Administradores</small>
+              </div>
+            </div>
+          </div>
+          <div class="col-12">
+            <div class="card bg-info text-white">
+              <div class="card-body text-center">
+                <i class="fas fa-user fa-2x mb-2"></i>
+                <h4>{{ estadisticas.totalCustomers }}</h4>
+                <small>Cajeros</small>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" (click)="cerrarModalEstadisticas()">
+          <i class="fas fa-times me-1"></i>Cerrar
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Backdrop para modales -->
+<div class="modal-backdrop fade show" *ngIf="mostrarModalCrear || mostrarModalEditar || mostrarModalEstadisticas"></div>

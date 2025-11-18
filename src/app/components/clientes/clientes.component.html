@@ -1,0 +1,281 @@
+<div class="container-fluid py-4">
+  <!-- Header -->
+  <div class="row mb-4">
+    <div class="col-12">
+      <div class="d-flex justify-content-between align-items-center">
+        <h2><i class="fas fa-users text-primary me-2"></i>Gestión de Clientes</h2>
+        <div>
+          <button type="button" class="btn btn-success me-2" (click)="abrirModalNuevo()">
+            <i class="fas fa-plus me-1"></i>Nuevo Cliente
+          </button>
+          <button type="button" class="btn btn-secondary" (click)="navegarADashboard()">
+            <i class="fas fa-arrow-left me-1"></i>Dashboard
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Mensajes -->
+  <div class="row mb-3" *ngIf="mensaje">
+    <div class="col-12">
+      <div class="alert" [class.alert-success]="tipoMensaje === 'success'" [class.alert-danger]="tipoMensaje === 'error'" role="alert">
+        <i class="fas" [class.fa-check-circle]="tipoMensaje === 'success'" [class.fa-exclamation-circle]="tipoMensaje === 'error'" class="me-2"></i>
+        {{ mensaje }}
+      </div>
+    </div>
+  </div>
+
+  <!-- Filtros de Búsqueda -->
+  <div class="row mb-4">
+    <div class="col-12">
+      <div class="card">
+        <div class="card-header">
+          <h5 class="mb-0"><i class="fas fa-search me-2"></i>Búsqueda de Clientes</h5>
+        </div>
+        <div class="card-body">
+          <div class="row">
+            <div class="col-md-4">
+              <label class="form-label">Buscar por nombre:</label>
+              <input type="text" class="form-control" [(ngModel)]="filtros.nombre" placeholder="Nombre del cliente">
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">Buscar por correo:</label>
+              <input type="email" class="form-control" [(ngModel)]="filtros.correo" placeholder="correo@ejemplo.com">
+            </div>
+            <div class="col-md-2">
+              <label class="form-label">Teléfono:</label>
+              <input type="text" class="form-control" [(ngModel)]="filtros.telefono" placeholder="Teléfono">
+            </div>
+            <div class="col-md-2 d-flex align-items-end">
+              <div class="btn-group w-100">
+                <button class="btn btn-primary" (click)="buscarClientes()" title="Buscar clientes">
+                  <i class="fas fa-search"></i>
+                </button>
+                <button class="btn btn-secondary" (click)="limpiarFiltros()" title="Limpiar filtros">
+                  <i class="fas fa-times"></i>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tabla de Clientes -->
+  <div class="row">
+    <div class="col-12">
+      <div class="card">
+        <div class="card-header">
+          <div class="d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">
+              <i class="fas fa-list me-2"></i>Lista de Clientes
+              <span class="badge bg-primary ms-2">{{ clientes.length }}</span>
+            </h5>
+            <button class="btn btn-outline-success btn-sm" (click)="cargarClientes()">
+              <i class="fas fa-sync-alt me-1"></i>Actualizar
+            </button>
+          </div>
+        </div>
+        <div class="card-body">
+          <!-- Loading -->
+          <div *ngIf="cargando" class="text-center py-4">
+            <div class="spinner-border text-primary" role="status">
+              <span class="visually-hidden">Cargando...</span>
+            </div>
+            <p class="mt-2">Cargando clientes...</p>
+          </div>
+
+          <!-- Tabla -->
+          <div *ngIf="!cargando" class="table-responsive">
+            <table class="table table-hover">
+              <thead class="table-dark">
+                <tr>
+                  <th>ID</th>
+                  <th>Nombre</th>
+                  <th>Correo</th>
+                  <th>Teléfono</th>
+                  <th class="text-center">Acciones</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let cliente of clientes">
+                  <td>{{ cliente.id }}</td>
+                  <td>
+                    <i class="fas fa-user text-primary me-2"></i>
+                    {{ cliente.nombre }}
+                  </td>
+                  <td>
+                    <i class="fas fa-envelope text-info me-2"></i>
+                    {{ cliente.correo }}
+                  </td>
+                  <td>
+                    <i class="fas fa-phone text-success me-2"></i>
+                    {{ cliente.telefono }}
+                  </td>
+                  <td class="text-center">
+                    <div class="btn-group" role="group">
+                      <button class="btn btn-outline-info btn-sm" (click)="verDetalle(cliente)" title="Ver detalle">
+                        <i class="fas fa-eye"></i>
+                      </button>
+                      <button class="btn btn-outline-primary btn-sm" (click)="editarCliente(cliente)" title="Editar">
+                        <i class="fas fa-edit"></i>
+                      </button>
+                      <button class="btn btn-outline-danger btn-sm" (click)="confirmarEliminar(cliente)" title="Eliminar">
+                        <i class="fas fa-trash"></i>
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+                <tr *ngIf="clientes.length === 0 && !cargando">
+                  <td colspan="5" class="text-center py-4 text-muted">
+                    <i class="fas fa-users fa-2x mb-2 d-block"></i>
+                    No se encontraron clientes
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Crear/Editar Cliente -->
+<div class="modal fade" id="modalCliente" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">
+          <i class="fas fa-user me-2"></i>
+          {{ esEdicion ? 'Editar Cliente' : 'Nuevo Cliente' }}
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <form>
+          <div class="mb-3">
+            <label for="nombre" class="form-label">
+              <i class="fas fa-user me-1"></i>Nombre Completo *
+            </label>
+            <input type="text" class="form-control" id="nombre" [(ngModel)]="clienteForm.nombre" 
+                   name="nombre" required placeholder="Ej: Juan Pérez García">
+          </div>
+          <div class="mb-3">
+            <label for="correo" class="form-label">
+              <i class="fas fa-envelope me-1"></i>Correo Electrónico *
+            </label>
+            <input type="email" class="form-control" id="correo" [(ngModel)]="clienteForm.correo" 
+                   name="correo" required placeholder="Ej: juan.perez@email.com">
+          </div>
+          <div class="mb-3">
+            <label for="telefono" class="form-label">
+              <i class="fas fa-phone me-1"></i>Teléfono *
+            </label>
+            <input type="tel" class="form-control" id="telefono" [(ngModel)]="clienteForm.telefono" 
+                   name="telefono" required placeholder="Ej: +57 300 123 4567">
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+          <i class="fas fa-times me-1"></i>Cancelar
+        </button>
+        <button type="button" class="btn btn-primary" (click)="guardarCliente()" [disabled]="guardando">
+          <span *ngIf="guardando" class="spinner-border spinner-border-sm me-2"></span>
+          <i *ngIf="!guardando" [class]="esEdicion ? 'fas fa-save' : 'fas fa-plus'" class="me-1"></i>
+          {{ guardando ? 'Guardando...' : (esEdicion ? 'Actualizar' : 'Crear') }}
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Ver Detalle -->
+<div class="modal fade" id="modalDetalle" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">
+          <i class="fas fa-info-circle me-2"></i>Detalle del Cliente
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body" *ngIf="clienteSeleccionado">
+        <div class="row mb-3">
+          <div class="col-sm-4"><strong>ID:</strong></div>
+          <div class="col-sm-8">{{ clienteSeleccionado.id }}</div>
+        </div>
+        <div class="row mb-3">
+          <div class="col-sm-4"><strong>Nombre:</strong></div>
+          <div class="col-sm-8">
+            <i class="fas fa-user text-primary me-2"></i>
+            {{ clienteSeleccionado.nombre }}
+          </div>
+        </div>
+        <div class="row mb-3">
+          <div class="col-sm-4"><strong>Correo:</strong></div>
+          <div class="col-sm-8">
+            <i class="fas fa-envelope text-info me-2"></i>
+            <a [href]="'mailto:' + clienteSeleccionado.correo">{{ clienteSeleccionado.correo }}</a>
+          </div>
+        </div>
+        <div class="row mb-3">
+          <div class="col-sm-4"><strong>Teléfono:</strong></div>
+          <div class="col-sm-8">
+            <i class="fas fa-phone text-success me-2"></i>
+            <a [href]="'tel:' + clienteSeleccionado.telefono">{{ clienteSeleccionado.telefono }}</a>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+          <i class="fas fa-times me-1"></i>Cerrar
+        </button>
+        <button type="button" class="btn btn-primary" (click)="editarCliente(clienteSeleccionado)" *ngIf="clienteSeleccionado">
+          <i class="fas fa-edit me-1"></i>Editar
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Confirmar Eliminación -->
+<div class="modal fade" id="modalEliminar" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title text-danger">
+          <i class="fas fa-exclamation-triangle me-2"></i>Confirmar Eliminación
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <p>¿Estás seguro de que deseas eliminar el cliente <strong>"{{ clienteAEliminar?.nombre }}"</strong>?</p>
+        <div class="alert alert-warning">
+          <i class="fas fa-exclamation-triangle me-2"></i>
+          Esta acción no se puede deshacer.
+        </div>
+        <div class="card bg-light">
+          <div class="card-body">
+            <h6>Datos del cliente a eliminar:</h6>
+            <p class="mb-1"><strong>Correo:</strong> {{ clienteAEliminar?.correo }}</p>
+            <p class="mb-0"><strong>Teléfono:</strong> {{ clienteAEliminar?.telefono }}</p>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+          <i class="fas fa-times me-1"></i>Cancelar
+        </button>
+        <button type="button" class="btn btn-danger" (click)="eliminarCliente()" [disabled]="eliminando">
+          <span *ngIf="eliminando" class="spinner-border spinner-border-sm me-2"></span>
+          <i *ngIf="!eliminando" class="fas fa-trash me-1"></i>
+          {{ eliminando ? 'Eliminando...' : 'Eliminar' }}
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
